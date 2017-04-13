@@ -84,38 +84,36 @@ class OrderActor(orderId: String, replicaId: String, val eventLog: ActorRef) ext
 
   override def onCommand = {
     case c: CreateOrder =>
-      processValidationResult(c.orderId, order.validateCreate(c))
+      assert(c.orderId == orderId)
+      process(order.validateCreate(c))
     case c: OrderCommand =>
-      processValidationResult(c.orderId, order.validateUpdate(c))
+      assert(c.orderId == orderId)
+      process(order.validateUpdate(c))
     case c: Resolve =>
-      processValidationResult(c.id, order.validateResolve(c.selected, replicaId))
+      assert(c.id == orderId)
+      process(order.validateResolve(c.selected, replicaId))
     case GetState =>
       val reply = order.aggregate match {
         case Some(aggregate) => GetStateSuccess(Map(orderId -> aggregate.all))
         case None            => GetStateSuccess(Map.empty)
       }
       sender() ! reply
-    case c: SaveSnapshot => order.aggregate match {
-      case None =>
-        sender() ! SaveSnapshotFailure(orderId, new AggregateDoesNotExistException(orderId))
-      case Some(aggregate) =>
-        save(aggregate) {
-          case Success(m) => sender() ! SaveSnapshotSuccess(orderId, m)
-          case Failure(e) => sender() ! SaveSnapshotFailure(orderId, e)
-        }
-    }
+    case c: SaveSnapshot =>
+      order.aggregate match {
+        case None =>
+          sender() ! SaveSnapshotFailure(orderId, new AggregateDoesNotExistException(orderId))
+        case Some(aggregate) =>
+          save(aggregate) {
+            case Success(m) => sender() ! SaveSnapshotSuccess(orderId, m)
+            case Failure(e) => sender() ! SaveSnapshotFailure(orderId, e)
+          }
+      }
   }
 
   override def onEvent = {
-    case e: OrderCreated =>
-      order = order.handleCreated(e, lastVectorTimestamp, lastSequenceNr)
-      if (!recovering) printOrder(order.versions)
-    case e: OrderEvent =>
-      order = order.handleUpdated(e, lastVectorTimestamp, lastSequenceNr)
-      if (!recovering) printOrder(order.versions)
-    case e: Resolved =>
-      order = order.handleResolved(e, lastVectorTimestamp, lastSequenceNr)
-      if (!recovering) printOrder(order.versions)
+    case e: OrderCreated => process(order.handleCreated(e, lastVectorTimestamp, lastSequenceNr))
+    case e: OrderEvent   => process(order.handleUpdated(e, lastVectorTimestamp, lastSequenceNr))
+    case e: Resolved     => process(order.handleResolved(e, lastVectorTimestamp, lastSequenceNr))
   }
 
   override def onSnapshot = {
@@ -132,12 +130,21 @@ class OrderActor(orderId: String, replicaId: String, val eventLog: ActorRef) ext
       printOrder(order.versions)
   }
 
-  private def processValidationResult(orderId: String, result: Try[Any]): Unit = result match {
-    case Failure(err) =>
-      sender() ! CommandFailure(orderId, err)
-    case Success(evt) => persist(evt) {
-      case Success(e) => sender() ! CommandSuccess(orderId)
-      case Failure(e) => sender() ! CommandFailure(orderId, e)
+  private def process[A](result: Try[A]) = {
+    result match {
+      case Failure(err) =>
+        sender() ! CommandFailure(orderId, err)
+      case Success(evt) => persist(evt) {
+        case Success(e) => sender() ! CommandSuccess(orderId)
+        case Failure(e) => sender() ! CommandFailure(orderId, e)
+      }
+    }
+  }
+
+  private def process(update: VersionedAggregate[Order, OrderCommand, OrderEvent]): Unit = {
+    order = update
+    if (!recovering) {
+      printOrder(update.versions)
     }
   }
 

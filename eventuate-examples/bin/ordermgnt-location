@@ -27,4 +27,4 @@ fi
 
 source ./eventuate-examples/bin/.example-classpath
 
-exec java -cp "$EXAMPLE_CLASSPATH" $EXAMPLE_MAIN $EXAMPLE_CONF $EXAMPLE_MODE
+exec java -ea -cp "$EXAMPLE_CLASSPATH" $EXAMPLE_MAIN $EXAMPLE_CONF $EXAMPLE_MODE
