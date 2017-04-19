@@ -119,6 +119,7 @@ lazy val examples = (project in file("eventuate-examples"))
   .settings(commonSettings: _*)
   .settings(exampleSettings: _*)
   .settings(libraryDependencies ++= Seq(AkkaRemote, CassandraDriver, Javaslang, Log4jApi, Log4jCore, Log4jSlf4j))
+  .settings(retrieveManaged := true)
   .enablePlugins(HeaderPlugin, AutomateHeaderPlugin)
 
 lazy val exampleStream = (project in file("eventuate-example-stream"))

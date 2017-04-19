@@ -4,3 +4,4 @@
 *.env
 target/
 eventuate-examples/bin/.example-classpath
+lib_managed/
