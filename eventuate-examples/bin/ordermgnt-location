@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 EXAMPLE_MODE=normal
 EXAMPLE_MAIN=com.rbmhtechnology.example.ordermgnt.OrderExample
@@ -21,10 +21,6 @@ done
 
 EXAMPLE_CONF=ordermgnt/location-$1.conf
 
-if [[ ! -f ./eventuate-examples/bin/.example-classpath ]]; then
-    sbt generateClasspath || exit 1
-fi
+source "$(dirname "$0")/.example-classpath" # inits EXAMPLE_CLASSPATH
 
-source ./eventuate-examples/bin/.example-classpath
-
-exec java -ea -cp "$EXAMPLE_CLASSPATH" $EXAMPLE_MAIN $EXAMPLE_CONF $EXAMPLE_MODE
+exec java $JAVA_OPTS -cp "$EXAMPLE_CLASSPATH" $EXAMPLE_MAIN $EXAMPLE_CONF $EXAMPLE_MODE

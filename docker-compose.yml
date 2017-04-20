@@ -1,0 +1,38 @@
+version: "3"
+services:
+
+  location-a:
+    build: .
+    command: [A]
+    stdin_open: true
+    tty: true
+
+  location-b:
+    build: .
+    command: [B]
+    stdin_open: true
+    tty: true
+
+  location-c:
+    build: .
+    command: [C]
+    stdin_open: true
+    tty: true
+
+  location-d:
+    build: .
+    command: [D]
+    stdin_open: true
+    tty: true
+
+  location-e:
+    build: .
+    command: [E]
+    stdin_open: true
+    tty: true
+
+  location-f:
+    build: .
+    command: [F]
+    stdin_open: true
+    tty: true
